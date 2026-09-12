@@ -1,0 +1,6 @@
+/seatsaero
+/seats-aero-cli
+.env
+*.test
+coverage.out
+/PROJECT_REQUIREMENTS.md
