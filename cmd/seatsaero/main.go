@@ -27,17 +27,17 @@ func version() string {
 }
 
 func run(args []string, stdout, stderr io.Writer) int {
-	return runWithBaseURL(args, stdout, stderr, api.BaseURL)
+	return runWithBaseURLs(args, stdout, stderr, api.BaseURL, api.RoomsBaseURL)
 }
 
-// The URL is injected only here for tests; the binary always uses api.BaseURL.
-func runWithBaseURL(args []string, stdout, stderr io.Writer, baseURL string) int {
+// URLs are injected only here for tests; the binary uses the fixed API hosts.
+func runWithBaseURLs(args []string, stdout, stderr io.Writer, baseURL, roomsBaseURL string) int {
 	var root cli.Root
 	var parseStderr bytes.Buffer
 	parserExit := -1
 	parser, err := kong.New(&root,
 		kong.Name("seatsaero"),
-		kong.Description("Query seats.aero award availability and route history as JSON."),
+		kong.Description("Query seats.aero flights and rooms.aero hotels as JSON."),
 		kong.Vars{"version": "seatsaero " + version()},
 		kong.Writers(stdout, &parseStderr),
 		kong.Exit(func(code int) { parserExit = code }),
@@ -64,6 +64,9 @@ func runWithBaseURL(args []string, stdout, stderr io.Writer, baseURL string) int
 		key, err := root.ResolveKey()
 		if err != nil {
 			return reportError(stderr, err)
+		}
+		if strings.HasPrefix(parsed.Command(), "rooms ") {
+			baseURL = roomsBaseURL
 		}
 		ctx.Client = api.NewClient(baseURL, key, version())
 	}

@@ -9,6 +9,7 @@ import (
 )
 
 const BaseURL = "https://seats.aero/partnerapi"
+const RoomsBaseURL = "https://rooms.aero/partnerapi"
 const maxErrorBody = 64 << 10
 
 type Request struct {

@@ -22,6 +22,7 @@ type Root struct {
 	Destinations DestinationsCmd  `cmd:"" help:"Discover nonstop airports and cheapest raw mileage."`
 	Refresh      RefreshCmd       `cmd:"" help:"Queue or check a refresh once; repeat the same IDs to poll (queued IDs spend credits)."`
 	Alerts       AlertsCmd        `cmd:"" help:"List alerts already configured on the account."`
+	Rooms        RoomsCmd         `cmd:"" help:"Search rooms.aero hotel awards with the same Pro key."`
 	Auth         AuthCmd          `cmd:"" help:"Save a Pro API key in config (the argument is visible in shell history)."`
 }
 
@@ -63,6 +64,12 @@ func setString(q url.Values, name string, value *string) {
 func setInt(q url.Values, name string, value *int64) {
 	if value != nil {
 		q.Set(name, strconv.FormatInt(*value, 10))
+	}
+}
+
+func setFloat(q url.Values, name string, value *float64) {
+	if value != nil {
+		q.Set(name, strconv.FormatFloat(*value, 'f', -1, 64))
 	}
 }
 

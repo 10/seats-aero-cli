@@ -54,25 +54,27 @@ func TestHTTPFailures(t *testing.T) {
 		{418, 1, "upstream_error", "teapot"},
 		{302, 1, "upstream_error", "redirect"},
 	} {
-		t.Run(fmt.Sprint(tc.status), func(t *testing.T) {
-			isolateConfig(t)
-			requests := 0
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				requests++
-				w.Header().Set("x-ratelimit-reset", "75660")
-				w.Header().Set("Location", "/redirect-target")
-				w.WriteHeader(tc.status)
-				io.WriteString(w, " \n"+tc.body+" \n")
-			}))
-			defer server.Close()
-			envelope := checkError(t, []string{"alerts"}, server.URL, tc.exit, tc.code, tc.status)
-			if envelope.Error.Upstream != tc.body || requests != 1 {
-				t.Fatalf("upstream=%q requests=%d", envelope.Error.Upstream, requests)
-			}
-			if tc.status == 429 && !strings.Contains(envelope.Error.Message, "21h1m") {
-				t.Fatal("missing reset duration")
-			}
-		})
+		for _, args := range [][]string{{"alerts"}, {"rooms", "details", "id"}} {
+			t.Run(strings.Join(args, " ")+"/"+fmt.Sprint(tc.status), func(t *testing.T) {
+				isolateConfig(t)
+				requests := 0
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					requests++
+					w.Header().Set("x-ratelimit-reset", "75660")
+					w.Header().Set("Location", "/redirect-target")
+					w.WriteHeader(tc.status)
+					io.WriteString(w, " \n"+tc.body+" \n")
+				}))
+				defer server.Close()
+				envelope := checkError(t, args, server.URL, tc.exit, tc.code, tc.status)
+				if envelope.Error.Upstream != tc.body || requests != 1 {
+					t.Fatalf("upstream=%q requests=%d", envelope.Error.Upstream, requests)
+				}
+				if tc.status == 429 && !strings.Contains(envelope.Error.Message, "21h1m") {
+					t.Fatal("missing reset duration")
+				}
+			})
+		}
 	}
 }
 
@@ -168,6 +170,9 @@ func TestUsageErrors(t *testing.T) {
 		{}, {"search", "SFO"}, {"availability"}, {"routes"}, {"trips"}, {"refresh"}, {"auth"}, {"history"},
 		{"history", "route"}, {"history", "route", "--kind", "cash", "--start-date", "2026-09-01", "--end-date", "2026-09-14"},
 		{"destinations"}, {"destinations", "--origin-airport", "SFO", "--destination-airport", "NRT"},
+		{"rooms"}, {"rooms", "search"}, {"rooms", "search", "--location", "Tokyo", "--start-date", "2026-11-20"},
+		{"rooms", "details"}, {"rooms", "refresh"}, {"rooms", "hotels", "--all"}, {"rooms", "alerts", "--cursor", "1"},
+		{"rooms", "availability", "--min-cpp", "many"},
 		{"search", "SFO", "NRT", "--take", "many"}, {"alerts", "--unknown"},
 		{"--api-key", testKey, "alerts", testKey}, {"auth", testKey, testKey},
 	} {
@@ -225,10 +230,10 @@ func TestInterruptedResponse(t *testing.T) {
 func TestHelpAndVersion(t *testing.T) {
 	isolateConfig(t)
 	t.Setenv("SEATSAERO_API_KEY", "")
-	for _, command := range []string{"", "search", "availability", "trips", "routes", "history", "destinations", "refresh", "alerts", "auth"} {
+	for _, command := range []string{"", "search", "availability", "trips", "routes", "history", "destinations", "refresh", "alerts", "auth", "rooms", "rooms search", "rooms availability", "rooms details", "rooms hotels", "rooms refresh", "rooms alerts"} {
 		args := []string{"--help"}
 		if command != "" {
-			args = []string{command, "--help"}
+			args = append(strings.Fields(command), "--help")
 		}
 		code, out, errOut := invoke(args, "http://invalid.invalid")
 		if code != 0 || !strings.Contains(out, "Usage:") || errOut != "" {
@@ -284,7 +289,7 @@ func TestSuccessStreamsBeforeResponseFinishes(t *testing.T) {
 		reader.Close()
 	}()
 	var errOut bytes.Buffer
-	code := runWithBaseURL([]string{"alerts"}, writer, &errOut, server.URL)
+	code := runWithBaseURLs([]string{"alerts"}, writer, &errOut, server.URL, server.URL)
 	writer.Close()
 	if code != 0 || errOut.Len() != 0 {
 		t.Fatalf("streaming: %d %s", code, errOut.String())
@@ -397,7 +402,7 @@ func TestCommandRequests(t *testing.T) {
 
 func invoke(args []string, baseURL string) (int, string, string) {
 	var stdout, stderr bytes.Buffer
-	code := runWithBaseURL(args, &stdout, &stderr, baseURL)
+	code := runWithBaseURLs(args, &stdout, &stderr, baseURL, baseURL)
 	return code, stdout.String(), stderr.String()
 }
 

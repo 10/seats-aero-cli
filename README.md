@@ -2,7 +2,7 @@
 
 # seatsaero
 
-*Search seats.aero award flights from your terminal.*
+*Search seats.aero award flights and rooms.aero hotel stays from your terminal.*
 
 [![Go](https://img.shields.io/badge/Go-1.26.3+-00ADD8?style=flat&logo=go&logoColor=white)](https://go.dev)
 [![API](https://img.shields.io/badge/API-seats.aero-3665F3?style=flat)](https://developers.seats.aero/reference/getting-started-p)
@@ -18,7 +18,8 @@ $ seatsaero search SFO NRT --cabins business | jq '.data[0].JMileageCost'
 ```
 
 Search cached award space across mileage programs, then drill into the flights
-behind a result. One Go binary and a seats.aero Pro API key.
+behind a result. Find hotel awards through Rooms.aero with the same Go binary
+and seats.aero Pro API key.
 
 ## Features
 
@@ -27,6 +28,7 @@ behind a result. One Go binary and a seats.aero Pro API key.
 - **Explore a program** — browse its availability and tracked routes, or find nonstop destinations from an airport.
 - **Collect pages** — optionally paginate and deduplicate within a request budget, with metadata for resuming.
 - **Route history** — retrieve daily availability and award mileage prices through the experimental website API.
+- **Hotel stays** — search an area, inspect hotel calendars and room prices, and get booking links through Rooms.aero.
 
 ## Install
 
@@ -134,6 +136,37 @@ This command uses undocumented seats.aero website endpoints that worked with a
 Pro key during testing. Their availability and quota rules are not a supported
 Partner API contract. A history call makes one request, follows no redirects,
 and rejects unexpected HTML or response shapes with `error.code: invalid_response`.
+
+## Hotels
+
+Your existing key also works with the [Rooms.aero API](https://developers.seats.aero/reference/rooms-getting-started).
+Use the `rooms` command group; authentication and JSON/error handling are shared.
+
+```bash
+seatsaero rooms search --location Tokyo --start-date 2026-11-20 --end-date 2026-11-27 --nights 3 --source hyatt
+seatsaero rooms hotels --source hyatt --search "Park Hyatt"
+seatsaero rooms availability --hotel-id HOTEL_ID --nights 3
+seatsaero rooms details AVAILABILITY_ID
+seatsaero rooms refresh HOTEL_ID
+seatsaero rooms alerts
+```
+
+Search dates bound **check-in dates**, not check-out. `--nights` selects a stay
+of 1–5 nights; omit it for all lengths. Points and cash prices are for the whole
+stay, with cash in the named currency's minor units. Details takes an availability
+`id`; search returns `hotel.id` for calendar lookups. See the
+[Rooms concepts](https://developers.seats.aero/reference/rooms-concepts) for response fields.
+
+Hotel lists default to `--take 50` and return the original `data`, `count`,
+`has_more`, and optional `more_url`. While `has_more` is true, repeat the same
+query with `--skip` increased by `--take`. Deduplicate by `id` (`hotel.id` for
+search). Rooms commands use manual pagination and have no `--all` or `--cursor`.
+Use each command's `--help` for the available filters.
+
+Rooms has a separate **1,000-call UTC-day quota**. Hotel refresh is one request
+per user per 24 hours, shared with the website. After requesting it once, read
+`rooms availability --hotel-id HOTEL_ID` and watch `last_checked_at` for new data;
+repeating `rooms refresh` is not a status check. [Refresh documentation](https://developers.seats.aero/reference/rooms-refresh-hotel).
 
 ## Agents
 
