@@ -18,6 +18,7 @@ type Root struct {
 	Availability AvailabilityCmd  `cmd:"" help:"Scan cached availability for one mileage program."`
 	Trips        TripsCmd         `cmd:"" help:"Get itineraries and booking links for an availability ID."`
 	Routes       RoutesCmd        `cmd:"" help:"List routes tracked by one mileage program."`
+	History      HistoryCmd       `cmd:"" help:"Get daily route history (experimental website API)."`
 	Destinations DestinationsCmd  `cmd:"" help:"Discover nonstop airports and cheapest raw mileage."`
 	Refresh      RefreshCmd       `cmd:"" help:"Queue or check a refresh once; repeat the same IDs to poll (queued IDs spend credits)."`
 	Alerts       AlertsCmd        `cmd:"" help:"List alerts already configured on the account."`
@@ -72,9 +73,11 @@ func setBool(q url.Values, name string, value bool) {
 }
 
 type PageFlags struct {
-	Take   int64  `default:"50" help:"Rows per page (API range 10–1000); raise deliberately as rows are large."`
-	Skip   *int64 `help:"Number of rows already retrieved."`
-	Cursor *int64 `help:"Opaque cursor integer from the first response."`
+	Take     int64  `default:"50" help:"Rows per page (API range 10–1000); raise deliberately as rows are large."`
+	Skip     *int64 `help:"Number of rows already retrieved."`
+	Cursor   *int64 `help:"Opaque cursor integer from the first response."`
+	All      bool   `help:"Collect and deduplicate pages within a request budget; check hasMore in the result."`
+	MaxPages *int   `help:"Maximum requests with --all (default 10); requires --all."`
 }
 
 func (p *PageFlags) query() url.Values {

@@ -25,6 +25,8 @@ behind a result. One Go binary and a seats.aero Pro API key.
 - **Flexible routes** — search multiple origin and destination airports in one call, with cabin, airline, and nonstop filters.
 - **Itinerary details** — flight numbers, times, mileage, taxes, seats, and booking links.
 - **Explore a program** — browse its availability and tracked routes, or find nonstop destinations from an airport.
+- **Collect pages** — optionally paginate and deduplicate within a request budget, with metadata for resuming.
+- **Route history** — retrieve daily availability and award mileage prices through the experimental website API.
 
 ## Install
 
@@ -40,9 +42,11 @@ authenticated GitHub access.
 
 ```bash
 seatsaero search SFO,LAX NRT,HND --cabins business --only-direct-flights
+seatsaero search SFO CAN --sources aeroplan --all --max-pages 3
 seatsaero availability --source aeroplan --cabin first
 seatsaero trips AVAILABILITY_ID             # itineraries and booking links
 seatsaero routes --source united
+seatsaero history ROUTE_ID --kind price --start-date 2026-09-01 --end-date 2026-09-14
 seatsaero destinations --origin-airport SFO  # nonstop destinations
 seatsaero refresh AVAILABILITY_ID           # queue or check a refresh
 seatsaero alerts
@@ -51,7 +55,8 @@ seatsaero alerts
 `--start-date` and `--end-date` narrow a search. Search and availability default
 to `--take 50`. Use a command's `--help` for all filters.
 
-Stdout is the API's JSON. Errors go to stderr, so results work directly with `jq`:
+By default, stdout is the API's JSON. `--all` produces a combined page envelope.
+Errors go to stderr, so results work directly with `jq`:
 
 ```bash
 set -o pipefail
@@ -82,7 +87,20 @@ Keys resolve from `--api-key`, then `SEATSAERO_API_KEY`, then
 | `TotalTaxes` | Minor units of `TaxesCurrency` |
 | Trip `DepartsAt` / `ArrivesAt` | Airport local time, **despite the `Z` suffix** |
 
-To paginate, keep the first response's `cursor` and repeat the query with
+Use `--all` on search or availability to collect pages, with `--max-pages N`
+limiting requests (default **10**). Rows are deduplicated by `ID`, keeping the
+first occurrence and all of its original fields. Output contains `data`,
+`count` (unique rows returned), `hasMore`, the original `cursor`, `nextSkip`
+(upstream rows traversed, including duplicates and any starting skip), and `pages`.
+
+**Check `hasMore` even on exit 0.** If true, the request budget stopped collection.
+Resume with the same query, `--cursor CURSOR --skip NEXT_SKIP --all`. When combining
+resumed runs, deduplicate their rows too. `hasMore: false` means this cached query
+is exhausted; it does not establish that every airline or live award was searched.
+Collection buffers results until all requested pages succeed; any request or
+response-shape failure exits nonzero without printing partial results. It does not retry.
+
+For manual pagination, keep the first response's `cursor` and repeat the query with
 `--cursor CURSOR --skip N`, where `N` is the number of rows already retrieved.
 Stop when `hasMore` is false; deduplicate overlapping pages by `ID`.
 
@@ -92,6 +110,30 @@ queued refresh IDs spend credits from the same pool. Refresh also has an hourly 
 
 Pro access is for personal, non-commercial use. Live search requires separate
 commercial access and is not included.
+
+## Route history
+
+Find the route's `ID` using `routes --source PROGRAM`, then pass it to `history`.
+The ID identifies a route in one program; it is not an availability ID from search.
+
+```bash
+seatsaero routes --source aeroplan |
+  jq '.[] | select(.OriginAirport == "SFO" and .DestinationAirport == "HKG") | .ID'
+seatsaero history ROUTE_ID --start-date 2026-09-01 --end-date 2026-09-14
+seatsaero history ROUTE_ID --kind price --start-date 2026-09-01 --end-date 2026-09-14 --cabins J
+```
+
+Dates are observation dates, not flight departure dates. The default kind is
+`availability` (`Y/W/J/FRemainingSeats`); `price` returns award mileage costs
+(`Y/W/J/FMileageCost`), not cash fares. Both return the original JSON array with
+`ObservationDay`. The default stops filter is `direct`, and the default aggregation
+metric is `sum` for availability or `max` for price. `--cabins` accepts comma-separated
+`Y,W,J,F`; `--stops` and `--metric` pass website filter values through.
+
+This command uses undocumented seats.aero website endpoints that worked with a
+Pro key during testing. Their availability and quota rules are not a supported
+Partner API contract. A history call makes one request, follows no redirects,
+and rejects unexpected HTML or response shapes with `error.code: invalid_response`.
 
 ## Agents
 

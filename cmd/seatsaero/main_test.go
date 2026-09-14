@@ -165,7 +165,8 @@ func TestUsageErrors(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { requests++ }))
 	defer server.Close()
 	for _, args := range [][]string{
-		{}, {"search", "SFO"}, {"availability"}, {"routes"}, {"trips"}, {"refresh"}, {"auth"},
+		{}, {"search", "SFO"}, {"availability"}, {"routes"}, {"trips"}, {"refresh"}, {"auth"}, {"history"},
+		{"history", "route"}, {"history", "route", "--kind", "cash", "--start-date", "2026-09-01", "--end-date", "2026-09-14"},
 		{"destinations"}, {"destinations", "--origin-airport", "SFO", "--destination-airport", "NRT"},
 		{"search", "SFO", "NRT", "--take", "many"}, {"alerts", "--unknown"},
 		{"--api-key", testKey, "alerts", testKey}, {"auth", testKey, testKey},
@@ -224,7 +225,7 @@ func TestInterruptedResponse(t *testing.T) {
 func TestHelpAndVersion(t *testing.T) {
 	isolateConfig(t)
 	t.Setenv("SEATSAERO_API_KEY", "")
-	for _, command := range []string{"", "search", "availability", "trips", "routes", "destinations", "refresh", "alerts", "auth"} {
+	for _, command := range []string{"", "search", "availability", "trips", "routes", "history", "destinations", "refresh", "alerts", "auth"} {
 		args := []string{"--help"}
 		if command != "" {
 			args = []string{command, "--help"}

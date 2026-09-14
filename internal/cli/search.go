@@ -38,5 +38,5 @@ func (c *SearchCmd) Run(ctx *Context) error {
 	setBool(q, "include_trips", c.IncludeTrips)
 	setBool(q, "minify_trips", c.MinifyTrips)
 	c.FilterFlags.addQuery(q)
-	return ctx.Client.Do(api.Request{Method: "GET", Path: "/search", Query: q}, ctx.Stdout)
+	return c.PageFlags.run(ctx, api.Request{Method: "GET", Path: "/search", Query: q})
 }

@@ -16,6 +16,8 @@ type Request struct {
 	Path   string
 	Query  url.Values
 	Body   io.Reader
+	// Website selects the undocumented /_api endpoints on the same host.
+	Website bool
 }
 
 type Client struct {
@@ -38,6 +40,9 @@ func NewClient(baseURL, key, version string) *Client {
 
 func (c *Client) Do(request Request, stdout io.Writer) error {
 	endpoint := c.baseURL + request.Path
+	if request.Website {
+		endpoint = strings.TrimSuffix(c.baseURL, "/partnerapi") + "/_api" + request.Path
+	}
 	if query := request.Query.Encode(); query != "" {
 		endpoint += "?" + query
 	}

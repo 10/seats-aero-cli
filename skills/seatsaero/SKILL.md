@@ -1,11 +1,11 @@
 ---
 name: seatsaero
-description: Query seats.aero award-flight availability with a Pro key; inspect itineraries, program routes, nonstop destinations, refresh status, and existing alerts from the shell.
+description: Query seats.aero award-flight availability with a Pro key; collect result pages, inspect itineraries and route history, discover nonstop destinations, and check refresh status or existing alerts.
 ---
 
 # seatsaero
 
-Use `seatsaero` for cached award availability. Read stdout as the original API JSON. Check the exit code before consuming results; usage errors are text, other failures are one JSON envelope on stderr. No live search, retries, automatic pagination, ranking, or refresh polling is built in.
+Use `seatsaero` for cached award availability and experimental route history. Stdout is the original API JSON except `--all`, which produces a combined page envelope. Check the exit code before consuming results; usage errors are text, other failures are one JSON envelope on stderr. Live search, retries, ranking, and refresh polling are not built in.
 
 ## Setup
 
@@ -27,13 +27,14 @@ Use an existing `SEATSAERO_API_KEY`, `--api-key KEY`, or `seatsaero auth KEY`. P
 | `availability --source aeroplan --cabin first --origin-region "North America" --destination-region Asia` | Scan one program |
 | `trips AVAILABILITY_ID` | Get concrete itineraries, segments, and booking links |
 | `routes --source united` | Get the program's tracked routes (bare array) |
+| `history ROUTE_ID --kind price --start-date 2026-09-01 --end-date 2026-09-14` | Get historical award mileage prices; omit kind for seat availability |
 | `destinations --origin-airport SFO` | Get cheapest raw nonstop mileage to reachable airports |
 | `destinations --destination-airport NRT` | Get nonstop origins serving an airport |
 | `refresh ID [ID...]` | Queue or check the same IDs once |
 | `alerts` | List already-configured alerts |
 | `auth KEY` | Save a key locally; no network request |
 
-Required inputs are shown above. Destinations requires exactly one airport flag. Flags below map to API parameters by replacing `-` with `_`. Flags not supplied are omitted, except **`--take 50`**. Rows are about 2.2 KB each; increase `take` only deliberately. Airports and carriers are uppercased; other values go upstream exactly as typed. Let an API `400` identify invalid values instead of inventing client-side vocabularies or date shorthand.
+Required inputs are shown above. Destinations requires exactly one airport flag. Search and availability API flags map to parameters by replacing `-` with `_`; `--all` and `--max-pages` control the CLI locally. Unset API flags are omitted, except **`--take 50`**. Rows are about 2.2 KB each; increase `take` only deliberately. Airports and carriers are uppercased; other search values go upstream exactly as typed. Let an API `400` identify invalid values instead of inventing client-side vocabularies or date shorthand.
 
 ### Search flags
 
@@ -117,7 +118,21 @@ seatsaero routes --source united |
 
 ## Pagination and refresh
 
-For search or availability:
+Use `--all --max-pages N` on search or availability for automatic collection within
+a request budget (default **10** pages). It keeps the original cursor, advances
+skip by upstream rows including duplicates, and keeps the first row for each `ID`.
+It buffers the collected rows; a failed request or invalid response returns an
+error with empty stdout. Default single-page commands still stream the API response.
+
+The combined envelope contains `data`, `count` (unique rows), `hasMore`, `cursor`,
+`nextSkip` (offset including any starting skip), and `pages` (requests made).
+**Exit 0 can still have `hasMore: true`** when the budget is reached. Resume with
+the same filters and `--cursor CURSOR --skip NEXT_SKIP --all`, then deduplicate
+across runs. `hasMore: false` means this cached query is exhausted, not that every
+airline or live award was searched. Choose the program allowlist with `--sources`;
+verify its transfer eligibility for the traveler's points separately.
+
+For manual pagination without `--all`:
 
 1. Read `data`, `hasMore`, and `cursor` from the first response. Preserve that first cursor as an opaque integer.
 2. If `hasMore` is true and more data is needed, repeat the same command and filters with `--cursor CURSOR --skip N`. `N` is the cumulative number of rows retrieved, including duplicates; it is not the number of unique IDs.
@@ -126,6 +141,25 @@ For search or availability:
 
 `refresh ID...` posts once. Re-run the identical IDs to check completion. Stop at `complete: true`. Item states include `queued`, `processing`, `succeeded`, `failed`, `fresh`, `skipped_outage`, `not_refreshable`, `not_found`, and `insufficient_quota`. Only `queued` spends a credit; `fresh` means updated within three hours. The CLI does not wait or poll itself.
 
+## Route history
+
+Get the `ID` from `routes --source PROGRAM`; it identifies a program's route,
+not a search availability record. Call `history ID --start-date YYYY-MM-DD
+--end-date YYYY-MM-DD`. Dates refer to **observation days**, not travel dates.
+
+The default kind is `availability`, returning daily `Y/W/J/FRemainingSeats`.
+`--kind price` returns `Y/W/J/FMileageCost`, which are award mileage prices,
+not cash fares. Both preserve the website's JSON array with `ObservationDay`.
+Optional filters: `--cabins Y,W,J,F` (all if omitted), `--stops` (default `direct`),
+and `--metric` (default `sum` for availability, `max` for price). These map to
+the website's `cabins`, `stops`, and `metric`; dates map to `start` and `end`.
+
+This is an experimental website API using the existing Pro key with no browser
+cookies or redirects. It was verified separately from the supported Partner API;
+availability and quota behavior may differ. HTML, a non-array response or rows
+without `ObservationDay` fail as `invalid_response` rather than masquerading as
+empty history. It makes one request and buffers the response for validation.
+
 ## Failures and quota
 
 | Exit | Code / condition | Next action |
@@ -133,14 +167,15 @@ For search or availability:
 | 0 | Success | Read stdout |
 | 1 | `network_error` | Check connectivity; decide whether to spend another call |
 | 1 | `upstream_error` | Unexpected status or `5xx`; inspect the error before retrying |
+| 1 | `invalid_response` | Unexpected page/history schema or stalled pagination; discard output and inspect endpoint compatibility |
 | 1 | `config_error` | Fix config JSON or filesystem access |
-| 2 | `bad_request` (`400`) | Fix parameters using `upstream` and `--help` |
+| 2 | `bad_request` | Fix API parameters or local pagination flags using the message and `--help` |
 | 2 | Plain-text Kong usage error | Supply required arguments / correct flags |
 | 3 | `missing_api_key` | Configure a key |
 | 3 | `unauthorized` (`401`/`403`) | Fix key, Pro subscription, or endpoint access |
 | 4 | `not_found` (`404`) | Recheck the availability ID |
 | 5 | `quota_exceeded` (`429`) | Stop and back off until reset; use reset duration in the message |
 
-JSON errors have `error.code`, `error.message`, `error.status` (zero without a response), and `error.upstream` (trimmed, capped at 64 KiB, key redacted). A broken response stream can leave partial stdout; discard it on nonzero exit. Enable `pipefail` in shell pipelines.
+JSON errors have `error.code`, `error.message`, `error.status` (zero when unavailable), and `error.upstream` (trimmed, capped at 64 KiB, key redacted). A broken response stream can leave partial stdout; discard it on nonzero exit. Enable `pipefail` in shell pipelines.
 
 Pro keys allow **1,000 calls per calendar day, resetting at midnight UTC**. This is a daily budget. Each page is a call; each queued refresh ID spends a credit from the same pool. Refresh also has an hourly request cap. No automatic retries or quota accounting occur. Pro access is personal and non-commercial; live search requires separate commercial access and has no CLI command.

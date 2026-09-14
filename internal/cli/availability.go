@@ -22,5 +22,5 @@ func (c *AvailabilityCmd) Run(ctx *Context) error {
 	setString(q, "origin_region", c.OriginRegion)
 	setString(q, "destination_region", c.DestinationRegion)
 	c.FilterFlags.addQuery(q)
-	return ctx.Client.Do(api.Request{Method: "GET", Path: "/availability", Query: q}, ctx.Stdout)
+	return c.PageFlags.run(ctx, api.Request{Method: "GET", Path: "/availability", Query: q})
 }

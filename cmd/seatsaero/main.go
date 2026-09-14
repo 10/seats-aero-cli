@@ -37,7 +37,7 @@ func runWithBaseURL(args []string, stdout, stderr io.Writer, baseURL string) int
 	parserExit := -1
 	parser, err := kong.New(&root,
 		kong.Name("seatsaero"),
-		kong.Description("Query seats.aero award availability. Success responses are streamed as JSON."),
+		kong.Description("Query seats.aero award availability and route history as JSON."),
 		kong.Vars{"version": "seatsaero " + version()},
 		kong.Writers(stdout, &parseStderr),
 		kong.Exit(func(code int) { parserExit = code }),
