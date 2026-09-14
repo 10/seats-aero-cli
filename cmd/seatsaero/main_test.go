@@ -168,6 +168,9 @@ func TestUsageErrors(t *testing.T) {
 		{}, {"search", "SFO"}, {"availability"}, {"routes"}, {"trips"}, {"refresh"}, {"auth"}, {"history"},
 		{"history", "route"}, {"history", "route", "--kind", "cash", "--start-date", "2026-09-01", "--end-date", "2026-09-14"},
 		{"destinations"}, {"destinations", "--origin-airport", "SFO", "--destination-airport", "NRT"},
+		{"rooms"}, {"rooms", "search"}, {"rooms", "search", "--location", "Tokyo", "--start-date", "2026-11-20"},
+		{"rooms", "details"}, {"rooms", "refresh"}, {"rooms", "hotels", "--all"}, {"rooms", "alerts", "--cursor", "1"},
+		{"rooms", "availability", "--min-cpp", "many"},
 		{"search", "SFO", "NRT", "--take", "many"}, {"alerts", "--unknown"},
 		{"--api-key", testKey, "alerts", testKey}, {"auth", testKey, testKey},
 	} {
@@ -225,10 +228,10 @@ func TestInterruptedResponse(t *testing.T) {
 func TestHelpAndVersion(t *testing.T) {
 	isolateConfig(t)
 	t.Setenv("SEATSAERO_API_KEY", "")
-	for _, command := range []string{"", "search", "availability", "trips", "routes", "history", "destinations", "refresh", "alerts", "auth"} {
+	for _, command := range []string{"", "search", "availability", "trips", "routes", "history", "destinations", "refresh", "alerts", "auth", "rooms", "rooms search", "rooms availability", "rooms details", "rooms hotels", "rooms refresh", "rooms alerts"} {
 		args := []string{"--help"}
 		if command != "" {
-			args = []string{command, "--help"}
+			args = append(strings.Fields(command), "--help")
 		}
 		code, out, errOut := invoke(args, "http://invalid.invalid")
 		if code != 0 || !strings.Contains(out, "Usage:") || errOut != "" {

@@ -1,11 +1,11 @@
 ---
 name: seatsaero
-description: Query seats.aero award-flight availability with a Pro key; collect result pages, inspect itineraries and route history, discover nonstop destinations, and check refresh status or existing alerts.
+description: Search award flights with seats.aero and hotel stays with rooms.aero through the seatsaero CLI; inspect itineraries, room rates, booking links, and route history using an existing Pro key.
 ---
 
 # seatsaero
 
-Use `seatsaero` for cached award availability and experimental route history. Stdout is the original API JSON except `--all`, which produces a combined page envelope. Check the exit code before consuming results; usage errors are text, other failures are one JSON envelope on stderr. Live search, retries, ranking, and refresh polling are not built in.
+Use `seatsaero` for cached award flights and experimental route history, and `seatsaero rooms` for hotel stays. Both use the same key configuration. Stdout is the original API JSON except flight `--all`, which produces a combined page envelope. Check the exit code before consuming results; usage errors are text, other failures are one JSON envelope on stderr. Live search, retries, ranking, and refresh polling are not built in.
 
 ## Setup
 
@@ -19,7 +19,7 @@ This installs `seatsaero` into `GOBIN`, or `~/go/bin` by default; put that direc
 
 Use an existing `SEATSAERO_API_KEY`, `--api-key KEY`, or `seatsaero auth KEY`. Precedence: flag → environment → config. `auth` saves the key in `$XDG_CONFIG_HOME/seatsaero/config.json`, otherwise `~/.config/seatsaero/config.json`, and prints only the path. CLI key arguments may remain in shell history. Never put real keys in committed files or reports. `seatsaero --version` and all `--help` commands work without a key.
 
-## Command reference
+## Flight command reference
 
 | Command | Purpose |
 | --- | --- |
@@ -69,7 +69,43 @@ Required inputs are shown above. Destinations requires exactly one airport flag.
 
 Trips accepts `--include-filtered` and `--min-cabin-pct`. Routes requires `--source` and has no other command flags. Destinations accepts only `--origin-airport` or `--destination-airport`. Refresh takes space-separated IDs and sends `{"availability_ids":["ID", "ID"]}`. Alerts has no command flags. All commands accept the global `--api-key`, `--help`, and `--version` flags.
 
-## Identifiers
+## Hotels (Rooms.aero)
+
+```sh
+seatsaero rooms search --location Tokyo --start-date 2026-11-20 --end-date 2026-11-27 --nights 3 --source hyatt
+seatsaero rooms hotels --source hyatt --search "Park Hyatt"
+seatsaero rooms availability --hotel-id HOTEL_ID --nights 3
+seatsaero rooms details AVAILABILITY_ID
+seatsaero rooms refresh HOTEL_ID
+seatsaero rooms alerts --include-expired
+```
+
+Search returns `hotel.id`; use it with `rooms availability --hotel-id`. Pass an
+availability row's `id` to `rooms details` for room types and `booking_link`.
+`rooms hotels` also finds IDs using country/city/name or program property codes.
+Availability accepts `--source`, `--hotel-id`, or both; `--rate-type cash` scans
+cash rates and `--room-type suite` scopes rate filters to suites. Each command's
+`--help` lists its filters; values pass upstream as typed.
+
+Dates bound check-in days, not check-out. `--nights` selects 1–5 nights; omission
+includes all lengths. Points and cash cover the whole stay; cash uses the named
+currency's minor units. Use returned `*_available` flags to interpret zero prices.
+`last_checked_at` is UTC; search/calendar data may be up to 21 days old.
+
+Rooms lists default to `--take 50`. Inspect `has_more` (snake case); advance
+`--skip` by `--take` until false or your request budget is reached. There is no
+Rooms `--all` or `--cursor`. Deduplicate by `id`, or `hotel.id` for search.
+
+The same Pro key works with a separate 1,000-call UTC-day quota. **Hotel refresh
+is one request per user every 24 hours, shared with the website.** Request it
+once, then read availability and watch `last_checked_at` advance. Repeating the
+refresh POST within 24 hours returns a limit error, not progress. Alerts are read-only.
+Sources: `hilton`, `hyatt`, `ihg`, `marriott`, `choice`, `wyndham`, `iprefer`.
+Reference: [Rooms API](https://developers.seats.aero/reference/rooms-getting-started),
+[data conventions](https://developers.seats.aero/reference/rooms-concepts),
+[refresh](https://developers.seats.aero/reference/rooms-refresh-hotel).
+
+## Flight identifiers
 
 Sources as published **2026-08-28**; these describe upstream, not a local allowlist:
 
@@ -94,7 +130,7 @@ Cabins: `economy`, `premium`, `business`, `first`.
 
 Regions: `North America`, `South America`, `Africa`, `Asia`, `Europe`, `Oceania`.
 
-## Reading results
+## Reading flight results
 
 Availability rows use cabin prefixes `Y` economy, `W` premium economy, `J` business, and `F` first. `XAvailable` is a boolean; `XMileageCost` is a **string** (`"0"` when unavailable); `XRemainingSeats: 0` means **unknown**, not sold out. `XAirlines` is comma-separated text. `XDirect` marks nonstop availability. Raw and Direct field variants describe unfiltered and nonstop-only values.
 
@@ -116,7 +152,7 @@ seatsaero routes --source united |
   jq '[.[] | select(.OriginAirport == "SFO") | .DestinationAirport] | unique'
 ```
 
-## Pagination and refresh
+## Flight pagination and refresh
 
 Use `--all --max-pages N` on search or availability for automatic collection within
 a request budget (default **10** pages). It keeps the original cursor, advances
@@ -173,9 +209,9 @@ empty history. It makes one request and buffers the response for validation.
 | 2 | Plain-text Kong usage error | Supply required arguments / correct flags |
 | 3 | `missing_api_key` | Configure a key |
 | 3 | `unauthorized` (`401`/`403`) | Fix key, Pro subscription, or endpoint access |
-| 4 | `not_found` (`404`) | Recheck the availability ID |
+| 4 | `not_found` (`404`) | Recheck the resource ID |
 | 5 | `quota_exceeded` (`429`) | Stop and back off until reset; use reset duration in the message |
 
 JSON errors have `error.code`, `error.message`, `error.status` (zero when unavailable), and `error.upstream` (trimmed, capped at 64 KiB, key redacted). A broken response stream can leave partial stdout; discard it on nonzero exit. Enable `pipefail` in shell pipelines.
 
-Pro keys allow **1,000 calls per calendar day, resetting at midnight UTC**. This is a daily budget. Each page is a call; each queued refresh ID spends a credit from the same pool. Refresh also has an hourly request cap. No automatic retries or quota accounting occur. Pro access is personal and non-commercial; live search requires separate commercial access and has no CLI command.
+The flight API allows **1,000 calls per calendar day, resetting at midnight UTC**. This is a daily budget. Each page is a call; each queued flight refresh ID spends a credit from the same pool. Flight refresh also has an hourly request cap. No automatic retries or quota accounting occur. Pro access is personal and non-commercial; live flight search requires separate commercial access and has no CLI command.
