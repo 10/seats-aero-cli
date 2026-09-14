@@ -15,6 +15,14 @@
 ```console
 $ seatsaero search SFO NRT --cabins business | jq '.data[0].JMileageCost'
 "75000"
+
+$ seatsaero rooms search --location Tokyo --source hyatt \
+    --start-date 2026-10-14 --end-date 2026-10-21 --nights 3 --take 3 |
+    jq '.data[0] | {hotel: .hotel.name, points: .lowest_award_standard}'
+{
+  "hotel": "Hyatt Regency Tokyo Bay",
+  "points": 15000
+}
 ```
 
 Search cached award space across mileage programs, then drill into the flights
