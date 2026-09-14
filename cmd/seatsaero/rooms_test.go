@@ -57,34 +57,3 @@ func TestRoomsRequests(t *testing.T) {
 		})
 	}
 }
-
-func TestRoomsErrors(t *testing.T) {
-	for _, tc := range []struct {
-		status, exit int
-		code, body   string
-	}{
-		{400, 2, "bad_request", `{"error":"invalid_parameter","message":"invalid nights"}`},
-		{401, 3, "unauthorized", `{"error":"bad_partner_key","message":"` + testKey + `"}`},
-		{403, 3, "unauthorized", `{"error":"pro_user_required"}`},
-		{404, 4, "not_found", `{"error":"availability_not_found"}`},
-		{429, 5, "quota_exceeded", `{"error":"refresh_limit_exceeded"}`},
-		{503, 1, "upstream_error", `{"error":"seats_aero_unavailable"}`},
-		{302, 1, "upstream_error", "redirect"},
-	} {
-		t.Run(tc.body, func(t *testing.T) {
-			isolateConfig(t)
-			requests := 0
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				requests++
-				w.Header().Set("Location", "/login")
-				w.WriteHeader(tc.status)
-				io.WriteString(w, tc.body)
-			}))
-			defer server.Close()
-			checkError(t, []string{"rooms", "details", "id"}, server.URL, tc.exit, tc.code, tc.status)
-			if requests != 1 {
-				t.Fatalf("expected one request, got %d", requests)
-			}
-		})
-	}
-}

@@ -30,11 +30,6 @@ func run(args []string, stdout, stderr io.Writer) int {
 	return runWithBaseURLs(args, stdout, stderr, api.BaseURL, api.RoomsBaseURL)
 }
 
-// Tests can route both services to the same local server.
-func runWithBaseURL(args []string, stdout, stderr io.Writer, baseURL string) int {
-	return runWithBaseURLs(args, stdout, stderr, baseURL, baseURL)
-}
-
 // URLs are injected only here for tests; the binary uses the fixed API hosts.
 func runWithBaseURLs(args []string, stdout, stderr io.Writer, baseURL, roomsBaseURL string) int {
 	var root cli.Root
