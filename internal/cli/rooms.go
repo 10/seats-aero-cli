@@ -71,7 +71,7 @@ type RoomsAvailabilityCmd struct {
 	RateType     *string  `help:"Rate type: award, cash, or any (API default award)."`
 	RoomType     *string  `help:"Room class: standard, suite, or any (API default any)."`
 	MaxPoints    *int64   `help:"Maximum award points for the stay."`
-	MinCPP       *float64 `name:"min-cpp" help:"Minimum value in US cents per point."`
+	MinCPP       *float64 `name:"min-cpp" help:"Minimum value per point, currently in US dollars (0.015 = 1.5 cents), unlike rooms search."`
 	OrderBy      *string  `help:"Order: arrival_date, lowest_award, lowest_cash, or last_checked."`
 	IncludeHotel *bool    `help:"Embed the hotel and booking link (API default true); use --include-hotel=false for smaller output."`
 	RoomsPageFlags
