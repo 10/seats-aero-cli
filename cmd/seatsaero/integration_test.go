@@ -7,10 +7,12 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 )
 
-// Six read-only calls at most. Refresh intentionally has no live test: queued
-// IDs spend additional credits and the endpoint has an hourly request cap.
+// Eight read-only calls at most, one of them to Rooms.aero. Refresh intentionally
+// has no live test: queued IDs spend additional credits and the endpoint has an
+// hourly request cap.
 func TestLiveAPI(t *testing.T) {
 	if os.Getenv("SEATSAERO_API_KEY") == "" {
 		t.Skip("set SEATSAERO_API_KEY to run live API checks")
@@ -63,11 +65,23 @@ func TestLiveAPI(t *testing.T) {
 		}
 		object(t, call(t, "trips", availabilityID), "booking_links")
 	})
+	var routeID string
 	t.Run("routes", func(t *testing.T) {
 		body := bytes.TrimSpace(call(t, "routes", "--source", "aeroplan"))
-		if len(body) == 0 || body[0] != '[' {
+		var routes []struct{ ID string }
+		if len(body) == 0 || body[0] != '[' || json.Unmarshal(body, &routes) != nil {
 			t.Fatal("routes must return a bare array")
 		}
+		if len(routes) > 0 {
+			routeID = routes[0].ID
+		}
+	})
+	t.Run("history", func(t *testing.T) {
+		if routeID == "" {
+			t.Skip("routes returned no route ID")
+		}
+		yesterday := time.Now().UTC().AddDate(0, 0, -1)
+		call(t, "history", routeID, "--start-date", yesterday.AddDate(0, 0, -6).Format(time.DateOnly), "--end-date", yesterday.Format(time.DateOnly))
 	})
 	t.Run("destinations", func(t *testing.T) {
 		result := object(t, call(t, "destinations", "--origin-airport", "SFO"), "success")
@@ -77,5 +91,8 @@ func TestLiveAPI(t *testing.T) {
 	})
 	t.Run("alerts", func(t *testing.T) {
 		object(t, call(t, "alerts"), "data")
+	})
+	t.Run("rooms hotels", func(t *testing.T) {
+		object(t, call(t, "rooms", "hotels", "--source", "hyatt", "--take", "1"), "data", "has_more")
 	})
 }
