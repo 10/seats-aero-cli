@@ -15,7 +15,7 @@ From a published module version:
 go install github.com/10/seats-aero-cli/cmd/seatsaero@latest
 ```
 
-This installs `seatsaero` into `GOBIN`, or `~/go/bin` by default; put that directory on `PATH`. While the repo is private, set `GOPRIVATE=github.com/10/seats-aero-cli` and use authenticated GitHub access. From a checkout, `go build -o seatsaero ./cmd/seatsaero` creates `./seatsaero`.
+This installs `seatsaero` into `GOBIN`, or `~/go/bin` by default; put that directory on `PATH`. From a checkout, `go build -o seatsaero ./cmd/seatsaero` creates `./seatsaero`.
 
 Use an existing `SEATSAERO_API_KEY`, `--api-key KEY`, or `seatsaero auth KEY`. Precedence: flag → environment → config. `auth` saves the key in `$XDG_CONFIG_HOME/seatsaero/config.json`, otherwise `~/.config/seatsaero/config.json`, and prints only the path. CLI key arguments may remain in shell history. Never put real keys in committed files or reports. `seatsaero --version` and all `--help` commands work without a key.
 

@@ -45,8 +45,6 @@ go install github.com/10/seats-aero-cli/cmd/seatsaero@latest
 ```
 
 Requires Go `1.26.3` or later, with `~/go/bin` (or `GOBIN`) on `PATH`.
-While the repo is private, set `GOPRIVATE=github.com/10/seats-aero-cli` and use
-authenticated GitHub access.
 
 ## CLI
 
