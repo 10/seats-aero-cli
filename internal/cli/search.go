@@ -7,8 +7,8 @@ import (
 )
 
 type SearchCmd struct {
-	Origin            string  `arg:"" help:"Origin IATA airport code or comma-separated codes."`
-	Destination       string  `arg:"" help:"Destination IATA airport code or comma-separated codes."`
+	Origin            string  `arg:"" help:"Origin IATA airport, metro or region code (e.g. NYC, EUR), or comma-separated codes."`
+	Destination       string  `arg:"" help:"Destination IATA airport, metro or region code (e.g. TYO, SAS), or comma-separated codes."`
 	StartDate         *string `help:"Depart on or after YYYY-MM-DD."`
 	EndDate           *string `help:"Depart on or before YYYY-MM-DD."`
 	Sources           *string `help:"Comma-separated mileage programs, e.g. aeroplan,united."`
