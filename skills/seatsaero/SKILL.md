@@ -92,6 +92,12 @@ includes all lengths. Points and cash cover the whole stay; cash uses the named
 currency's minor units. Use returned `*_available` flags to interpret zero prices.
 `last_checked_at` is UTC; search/calendar data may be up to 21 days old.
 
+`rooms search` reports `cpp` and filters `--min-cpp` in US cents per point. As of
+2026-11-16, `rooms availability` and `rooms details` report `standard_cpp` and
+`suite_cpp` in US dollars per point, and `rooms availability --min-cpp` filters on
+that scale (`0.015` is 1.5 cents), unlike the Rooms docs. They may also convert
+cash at a different exchange rate. Do not compare CPP values across these commands.
+
 Rooms lists default to `--take 50`. Inspect `has_more` (snake case); advance
 `--skip` by `--take` until false or your request budget is reached. There is no
 Rooms `--all` or `--cursor`. Deduplicate by `id`, or `hotel.id` for search.
