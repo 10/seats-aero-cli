@@ -148,6 +148,8 @@ Availability rows use cabin prefixes `Y` economy, `W` premium economy, `J` busin
 
 Trips have integer `MileageCost`, `AvailabilitySegments`, `RemainingSeats`, and `TotalDuration` in minutes. Taxes are minor units of `TaxesCurrency`. Trip `DepartsAt` and `ArrivesAt` carry `Z` but are **airport local times**: do not convert them as UTC. `CreatedAt` and `UpdatedAt` are UTC. `MixedCabinPct`, when present, is the distance percentage below the reported cabin; it is inverse to the `min_cabin_pct` filter.
 
+`search --include-trips` embeds each row's trips in `AvailabilityTrips` with the same IDs, flight numbers, times, mileage, taxes and seats as `trips`, but without `AvailabilitySegments` or `booking_links`. To screen many rows, use one such search (average row size grew 3–22× when tested, and one row reached 136 KB, so keep `--take` small) and call `trips` only for finalists. `--minify-trips` also drops flight numbers, times and the tax currency.
+
 Destinations prices are cheapest raw nonstop miles across programs; `null` means no availability for that cabin. Inspect trips and booking links before making a booking decision.
 
 ```sh
