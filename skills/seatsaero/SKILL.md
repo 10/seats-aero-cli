@@ -34,7 +34,7 @@ Use an existing `SEATSAERO_API_KEY`, `--api-key KEY`, or `seatsaero auth KEY`. P
 | `alerts` | List already-configured alerts |
 | `auth KEY` | Save a key locally; no network request |
 
-Required inputs are shown above. Destinations requires exactly one airport flag. Search and availability API flags map to parameters by replacing `-` with `_`; `--all` and `--max-pages` control the CLI locally. Unset API flags are omitted, except **`--take 50`**. Rows are about 2.2 KB each; increase `take` only deliberately. Airports and carriers are uppercased; other search values go upstream exactly as typed. Let an API `400` identify invalid values instead of inventing client-side vocabularies or date shorthand.
+Required inputs are shown above. Destinations requires exactly one airport flag. Search and availability API flags map to parameters by replacing `-` with `_`; `--all` and `--max-pages` control the CLI locally. Unset API flags are omitted, except **`--take 50`**. Rows are about 2.2 KB each; increase `take` only deliberately. Airports and carriers are uppercased; other search values go upstream exactly as typed. Search airports also accept seats.aero metro and region codes, which expand upstream (observed 2026-11-16; not in the search docs): `TYO` searches HND and NRT, `NYC` the New York airports, `EUR` large European airports and `SAS` large Southeast Asian airports. Destinations expands metro codes too. Let an API `400` identify invalid values instead of inventing client-side vocabularies or date shorthand.
 
 ### Search flags
 
