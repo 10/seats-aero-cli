@@ -26,7 +26,7 @@ Use an existing `SEATSAERO_API_KEY`, `--api-key KEY`, or `seatsaero auth KEY`. P
 | `search SFO,LAX NRT,HND --cabins business --start-date 2026-10-01 --end-date 2026-10-31` | Find space on one or several routes |
 | `availability --source aeroplan --cabin first --origin-region "North America" --destination-region Asia` | Scan one program |
 | `trips AVAILABILITY_ID` | Get concrete itineraries, segments, and booking links |
-| `routes --source united` | Get the program's tracked routes (bare array) |
+| `routes --source united` | Get the program's tracked routes (bare array; about 1.8 MB for large programs, so filter with `jq`) |
 | `history ROUTE_ID --kind price --start-date 2026-09-01 --end-date 2026-09-14` | Get historical award mileage prices; omit kind for seat availability |
 | `destinations --origin-airport SFO` | Get cheapest raw nonstop mileage to reachable airports |
 | `destinations --destination-airport NRT` | Get nonstop origins serving an airport |
