@@ -107,24 +107,30 @@ Reference: [Rooms API](https://developers.seats.aero/reference/rooms-getting-sta
 
 ## Flight identifiers
 
-Sources as published **2026-08-28**; these describe upstream, not a local allowlist:
+Sources with tracked routes on **2026-11-16**; these describe upstream, not a local allowlist:
 
 | Source | Program | Source | Program |
 | --- | --- | --- | --- |
-| `aeromexico` | Aeromexico Club Premier | `flyingblue` | Air France/KLM Flying Blue |
-| `aeroplan` | Air Canada Aeroplan | `frontier` | Frontier Airlines |
-| `alaska` | Alaska Mileage Plan | `jetblue` | JetBlue TrueBlue |
-| `american` | American Airlines | `lufthansa` | Lufthansa Miles & More |
-| `azul` | Azul TudoAzul | `qantas` | Qantas Frequent Flyer |
-| `connectmiles` | Copa ConnectMiles | `qatar` | Qatar Privilege Club |
-| `delta` | Delta SkyMiles | `saudia` | Saudia AlFursan |
-| `emirates` | Emirates Skywards | `singapore` | Singapore KrisFlyer |
-| `ethiopian` | Ethiopian ShebaMiles | `smiles` | GOL Smiles |
-| `etihad` | Etihad Guest | `spirit` | Spirit Airlines |
-| `eurobonus` | SAS EuroBonus | `turkish` | Turkish Miles & Smiles |
+| `aeromexico` | Aeromexico Club Premier | `jal` | Japan Airlines Mileage Bank |
+| `aeroplan` | Air Canada Aeroplan | `jetblue` | JetBlue TrueBlue |
+| `alaska` | Alaska Mileage Plan | `latam` | LATAM Pass |
+| `american` | American Airlines | `lifemiles` | Avianca LifeMiles |
+| `asiamiles` | Cathay Pacific Asia Miles | `livelo` | Livelo |
+| `azul` | Azul TudoAzul | `lufthansa` | Lufthansa Miles & More |
+| `british` | British Airways Club | `porter` | Porter VIPorter |
+| `copa` | Copa ConnectMiles | `qantas` | Qantas Frequent Flyer |
+| `delta` | Delta SkyMiles | `qatar` | Qatar Privilege Club |
+| `emirates` | Emirates Skywards | `saudia` | Saudia AlFursan |
+| `ethiopian` | Ethiopian ShebaMiles | `singapore` | Singapore KrisFlyer |
+| `etihad` | Etihad Guest | `smiles` | GOL Smiles |
+| `eurobonus` | SAS EuroBonus | `spirit` | Spirit Airlines |
+| `eva` | EVA Air Infinity MileageLands | `turkish` | Turkish Miles & Smiles |
 | `finnair` | Finnair Plus | `united` | United MileagePlus |
-| | | `velocity` | Virgin Australia Velocity |
-| | | `virginatlantic` | Virgin Atlantic Flying Club |
+| `flyingblue` | Air France/KLM Flying Blue | `velocity` | Virgin Australia Velocity |
+| `frontier` | Frontier Airlines | `virginatlantic` | Virgin Atlantic Flying Club |
+| `iberia` | Iberia Club | | |
+
+The API no longer accepts `connectmiles`, although the seats.aero concepts page still lists it; use `copa`. `search` silently ignores an unknown `--sources` value, returning no rows with exit 0 when it is the only one. Check a new identifier with `availability --source PROGRAM --take 10`, which rejects unknown programs with `invalid_source`.
 
 Cabins: `economy`, `premium`, `business`, `first`.
 
