@@ -199,4 +199,5 @@ With `SEATSAERO_API_KEY` set:
 go test -tags integration ./... -v -count=1
 ```
 
-The live suite makes up to six read-only calls. Refresh is tested locally.
+The live suite makes up to eight read-only calls, including route history and one
+Rooms.aero request. Refresh is tested locally.
