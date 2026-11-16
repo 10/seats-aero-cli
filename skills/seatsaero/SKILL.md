@@ -205,7 +205,7 @@ empty history. It makes one request and buffers the response for validation.
 | 1 | `upstream_error` | Unexpected status or `5xx`; inspect the error before retrying |
 | 1 | `invalid_response` | Unexpected page/history schema or stalled pagination; discard output and inspect endpoint compatibility |
 | 1 | `config_error` | Fix config JSON or filesystem access |
-| 2 | `bad_request` | Fix API parameters or local pagination flags using the message and `--help` |
+| 2 | `bad_request` | Fix API parameters using the reason in `error.upstream` (e.g. `invalid_source`), or local pagination flags using the message and `--help` |
 | 2 | Plain-text Kong usage error | Supply required arguments / correct flags |
 | 3 | `missing_api_key` | Configure a key |
 | 3 | `unauthorized` (`401`/`403`) | Fix key, Pro subscription, or endpoint access |
